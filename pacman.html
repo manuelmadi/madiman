@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Pac-Man Ultimate</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;Pac-Man Ultimate&quot;,&quot;short_name&quot;:&quot;PacMan&quot;,&quot;start_url&quot;:&quot;.&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;#000000&quot;,&quot;theme_color&quot;:&quot;#000000&quot;}" />
+<style>
+body{margin:0;background:black;color:white;font-family:Arial;display:flex;justify-content:center;align-items:center;height:100vh;overflow:hidden}
+canvas{border:2px solid #00f;touch-action:none}
+.menu,.overlay{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;background:rgba(0,0,0,.9)}
+button,select{font-size:16px;padding:10px 20px;margin:6px}
+.touch{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:10px}
+.touch button{width:60px;height:60px;border-radius:50%;font-size:20px}
+</style>
+</head>
+<body>
+
+<div class="menu" id="menu">
+  <button onclick="showAchievements()">🏆 Logros</button>
+  <h1 style="color:yellow">PAC-MAN ULTIMATE</h1>
+  <label>Dificultad <select id="difficulty"><option value="easy">Fácil</option><option value="normal" selected>Normal</option><option value="hard">Difícil</option></select></label>
+  <label>Skin Pac-Man <select id="pacSkin"><option value="yellow">Clásico</option><option value="green">Verde</option><option value="blue">Azul</option></select></label>
+  <label>Skin Fantasmas <select id="ghostSkin"><option value="classic">Clásico</option><option value="dark">Oscuro</option></select></label>
+  <button onclick="startGame()">▶ Jugar</button>
+  <button onclick="resetProgress()">🗑️ Borrar progreso</button>
+</div>
+
+<div class="overlay" id="win" style="display:none">
+  <h1 style="color:lime">🎉 ¡VICTORIA! 🎉</h1>
+  <p>Has completado los 50 niveles</p>
+  <button onclick="backMenu()">Volver al menú</button>
+</div>
+
+<canvas id="game" width="400" height="400"></canvas>
+
+<div class="touch">
+  <button ontouchstart="move('up')">⬆️</button>
+  <button ontouchstart="move('left')">⬅️</button>
+  <button ontouchstart="move('down')">⬇️</button>
+  <button ontouchstart="move('right')">➡️</button>
+</div>
+
+<script>
+const c=document.getElementById('game'),ctx=c.getContext('2d');
+const rows=20,cols=20,t=20,MAX=50;
+let map=[],pac,ghosts=[],lvl=1,score=0,lives=3;
+let pacColor='yellow',ghostMode='classic';
+let hue=0;
+
+function saveProgress(){localStorage.setItem('pacmanProgress',JSON.stringify({lvl,score}))}
+function loadProgress(){const d=JSON.parse(localStorage.getItem('pacmanProgress')); if(d){lvl=d.lvl;score=d.score}}
+
+function resetProgress(){localStorage.removeItem('pacmanProgress'); alert('Progreso borrado')}
+
+function startGame(){
+  pacColor=document.getElementById('pacSkin').value;
+  ghostMode=document.getElementById('ghostSkin').value;
+  loadProgress(); document.getElementById('menu').style.display='none'; startLevel(); loop();
+}
+
+function startLevel(){
+  map=Array.from({length:rows},()=>Array(cols).fill(0));
+  for(let i=0;i<cols;i++){map[0][i]=map[rows-1][i]=1; map[i][0]=map[i][cols-1]=1}
+  pac={x:1,y:1,dx:0,dy:0,dir:0}; ghosts=[];
+  if(lvl>=3) ghosts.push({x:18,y:18,dx:-1,dy:0}); saveProgress();
+}
+
+function drawBG(){hue=(hue+0.5)%360; ctx.fillStyle=`hsl(${hue},50%,10%)`; ctx.fillRect(0,0,400,400)}
+
+function draw(){
+  drawBG();
+  ctx.fillStyle=pacColor; ctx.beginPath(); ctx.arc(pac.x*t+10,pac.y*t+10,8,0,Math.PI*2); ctx.fill();
+  ghosts.forEach(g=>{ctx.fillStyle=ghostMode==='dark'?'purple':'red'; ctx.beginPath(); ctx.arc(g.x*t+10,g.y*t+10,8,0,Math.PI*2); ctx.fill()});
+}
+
+function loop(){
+  draw(); requestAnimationFrame(loop);
+}
+
+function move(d){
+  if(d==='up'){pac.dx=0;pac.dy=-1}
+  if(d==='down'){pac.dx=0;pac.dy=1}
+  if(d==='left'){pac.dx=-1;pac.dy=0}
+  if(d==='right'){pac.dx=1;pac.dy=0}
+}
+
+function backMenu(){document.getElementById('win').style.display='none'; document.getElementById('menu').style.display='flex'}
+
+window.addEventListener('keydown',e=>{
+  if(e.key==='ArrowUp')move('up');
+  if(e.key==='ArrowDown')move('down');
+  if(e.key==='ArrowLeft')move('left');
+  if(e.key==='ArrowRight')move('right');
+});
+</script>
+<div class="overlay" id="achievements" style="display:none">
+  <h2>🏆 Logros</h2>
+  <ul id="achList"></ul>
+  <button onclick="closeAchievements()">Cerrar</button>
+</div>
+</body>
+</html>
